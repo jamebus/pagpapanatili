@@ -1,0 +1,21 @@
+#!/bin/sh
+
+set -eu
+
+test "${PAGPAPANATILI_VERBOSE:-0}" -eq 1 && set -x
+
+if [ "${PROFILE_COMMAND:-}" = 'backup' ]; then
+	backup_path=${RESTICPROFILE_SNAPSHOT_MOUNTPOINT:-${PAGPAPANATILI_PWD:-}}
+	gum log --level=info --time=datetime "Changing directory to: $backup_path"
+	test -n "$backup_path" && cd "$backup_path"
+fi
+
+rc=0
+restic "$@" || rc=$?
+
+if [ "${PROFILE_COMMAND:-}" = 'backup' ] && [ $rc -eq 3 ]; then
+	gum log --level=warn --time=datetime 'Some source files could not be read (incomplete snapshot)'
+	exit 0
+fi
+
+exit $rc

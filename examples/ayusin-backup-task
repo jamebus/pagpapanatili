@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# shellcheck disable=SC1090
+. "$(ayusin --common)"
+# shellcheck disable=SC2034
+task_description='Backup home directory'
+
+task_start
+
+$DRYRUN pag home.backup
+
+task_end

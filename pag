@@ -1,0 +1,61 @@
+#!/bin/sh
+
+set -eu
+
+version='0.1.0'
+me="${0##*/}"
+share_dir="${0%/*}/../share/pagpapanatili"
+
+. "${share_dir}/shared.subr"
+
+usage() {
+	echo "Usage: $me [options] [command]"
+	echo "       $me [options] [resticprofile flags] [profile name.]restic-command [restic flags]"
+	echo "       $me [options] [resticprofile flags] [profile name.]resticprofile-command [command specific flags]"
+	echo
+	echo '       --version            Show version'
+	echo '       -v, --verbose        Enable verbose output'
+	echo '       -n, --dry-run        Show what would have happened'
+	echo '       -h, --help           Show this help'
+	echo
+	echo '       config, configure    Configure'
+	echo '       version              Show version'
+}
+
+while [ $# -ne 0 ]; do
+	case "$1" in
+		--version|version)
+			echo "$me $version"
+			maybe_run_command resticprofile version
+			maybe_run_command restic version
+			exit 0
+			;;
+		-v|--verbose)
+			opt_verbose=1
+			shift
+			;;
+		-n|--dry-run)
+			opt_dryrun=1
+			shift
+			;;
+		-h|--help)
+			usage
+			;;
+		config|configure)
+			. "${share_dir}/configure.subr"
+			configure
+			;;
+		*)
+			break
+			;;
+	esac
+
+	setup_options
+done
+
+PAGPAPANATILI_PWD="$PWD"
+export PAGPAPANATILI_PWD
+
+cd "$share_dir"
+
+exec_resticprofile "$@"

@@ -1,0 +1,62 @@
+# shellcheck shell=sh
+
+set -eu
+
+fatal() {
+	gum log --level=fatal "${1:-Unknown}"
+}
+
+maybe_run_command() {
+	command -v "$1" >/dev/null || return 0
+
+	run_command "$@"
+}
+
+run_command() {
+	if [ "${opt_dryrun:-0}" -eq 1 ]; then
+		set -- echo '⚪️' "$@"
+	fi
+
+	"$@"
+}
+
+setup_options() {
+	setup_verbose_option
+}
+
+setup_verbose_option() {
+	test "${opt_verbose:-0}" -eq 1 || return 0
+
+	PAGPAPANATILI_VERBOSE=1
+	export PAGPAPANATILI_VERBOSE
+	set -x
+}
+
+run_resticprofile() {
+	# shellcheck disable=SC3043
+	local should_exec
+
+	if [ "$1" = '--exec' ]; then
+		should_exec=1
+		shift
+	fi
+
+	if [ "${opt_verbose:-0}" -eq 1 ]; then
+		set -- --verbose "$@"
+	fi
+
+	# run_command won't run resticprofile in a dryrun condition.
+	# But just in case.
+	if [ "${opt_dryrun:-0}" -eq 1 ]; then
+		set -- --dry-run "$@"
+	fi
+
+	set -- resticprofile "$@"
+	test ${should_exec:-0} -eq 1 && set -- exec "$@"
+
+	run_command "$@"
+}
+
+exec_resticprofile() {
+	run_resticprofile --exec "$@"
+}

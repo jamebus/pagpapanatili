@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# shellcheck disable=SC1090
+. "$(ayusin --common)"
+# shellcheck disable=SC2034
+task_description='Prune pagpapanatili repository'
+
+task_start
+task_lastrun_days 30 || task_skip
+
+$DRYRUN pag prune
+
+task_update_lastrun
+task_end

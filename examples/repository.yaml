@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://creativeprojects.github.io/resticprofile/jsonschema/config-1.json
+
+version: "1"
+
+default:
+  repository: s3:s3.amazonaws.com/mybucket/restic
+  env:
+    aws_region: us-east-1
+    aws_profile: pagpapanatili

@@ -1,0 +1,274 @@
+# shellcheck shell=sh
+
+set -eu
+
+user_config_dir="${PAGPAPANATILI_USER_CONFIG_DIR:-${HOME}/.pagpapanatili}"
+# ayusin_user_config_dir="${AYUSIN_USER_CONFIG_DIR:-${HOME}/.ayusin}" # TODO
+user_config_profiles_dir="${user_config_dir}/profiles.d"
+
+for v in $(printenv | awk -F= '/^GUM_/ {print $1}'); do unset "$v"; done
+
+GUM_INPUT_WIDTH=0
+GUM_INPUT_PROMPT_FOREGROUND=4
+GUM_INPUT_PROMPT_BOLD=0
+GUM_CHOOSE_HEADER_FOREGROUND=4
+GUM_CHOOSE_HEADER_BOLD=0
+GUM_SPIN_SPINNER='points'
+export GUM_INPUT_WIDTH GUM_INPUT_PROMPT_FOREGROUND GUM_INPUT_PROMPT_BOLD \
+       GUM_CHOOSE_HEADER_FOREGROUND GUM_CHOOSE_HEADER_BOLD \
+       GUM_SPIN_SPINNER
+
+# Waiting for sourced-by or similar
+# https://github.com/koalaman/shellcheck/issues/356#issuecomment-1217754971
+
+# shellcheck disable=SC2154
+example_repository_config_file="${share_dir}/examples/repository.yaml"
+target_repository_config_file="${user_config_profiles_dir}/repository.yaml"
+
+terminal_width() {
+	# shellcheck disable=SC3043
+	local term_size
+
+	term_size=$(stty size || echo '80')
+	echo "${term_size#* }"
+}
+
+section() {
+	gum style --underline --foreground=5 "${1:-Unknown}"
+}
+
+security_warning() {
+	echo
+	gum style --bold --foreground=5 --width=$(($(terminal_width) - 3)) \
+	          --border=rounded --border-foreground=5 --align=center \
+	          "⚠ ${1:-Unknown} ⚠"
+	echo
+}
+
+configure() {
+	# shellcheck disable=SC3043
+	local config_repository_url config_repository_region \
+	      default_repository_profile config_repository_profile \
+	      config_access_key_id config_secret_access_key \
+	      config_secret_access_masked aws_profiles f var \
+	      new_profile created_new_profile creating_repository_config_file \
+	      password_file password_choice manual_password \
+	      config_password config_password_masked \
+	      creating_password_file
+
+	new_profile='• NEW PROFILE •'
+	manual_password='• CHOOSE MY OWN •'
+	default_repository_profile='pagpapanatili'
+
+	for f in "$target_repository_config_file" "$example_repository_config_file"; do
+		if [ -f "$f" ]; then
+			config_repository_url=$(yq '.default.repository' "$f")
+			config_repository_region=$(yq '.default.env.aws_region' "$f")
+			config_repository_profile=$(yq '.default.env.aws_profile' "$f")
+			break
+		fi
+	done
+
+	for var in config_repository_url config_repository_region config_repository_profile; do
+		eval test -z "\${$var:-}" && gum log --level=warn "Using built-in default for $var"
+	done
+
+	: "${config_repository_url:=s3:s3.amazonaws.com/mybucket/restic}"
+	: "${config_repository_region:=us-east-1}"
+	: "${config_repository_profile:=pagpapanatili}"
+
+	section 'Repository configuration'
+
+	while true; do
+		config_repository_url=$(gum input --prompt='URL: ' \
+		                                  --placeholder='s3:s3.foobar.com/mybucket/restic' \
+		                                  --value="$config_repository_url")
+		test -n "$config_repository_url" && break
+	done
+	echo "URL: $config_repository_url"
+
+	while true; do
+		config_repository_region=$(gum input --prompt='Region: ' \
+		                                     --placeholder='us-east-1' \
+		                                     --value="$config_repository_region")
+		test -n "$config_repository_region" && break
+	done
+	echo "Region: $config_repository_region"
+
+	echo
+	section 'Storage authentication configuration'
+
+	aws_profiles=$(gum spin --title='Loading...' \
+	                        --show-output -- aws configure list-profiles)
+	if [ -n "$aws_profiles" ]; then
+		# For $aws_profiles
+		# shellcheck disable=SC2086
+		config_repository_profile=$(gum choose --header='Profile:' \
+		                                       --selected="$config_repository_profile" \
+		                                       "$new_profile" $aws_profiles)
+
+		echo "$aws_profiles" | \
+		grep "[[:<:]]${default_repository_profile}[[:>:]]" >/dev/null && \
+		default_repository_profile=''
+	else
+		config_repository_profile="$new_profile"
+		created_new_profile=1
+	fi
+	if [ "$config_repository_profile" = "$new_profile" ]; then
+		while true; do
+			config_repository_profile=$(gum input --prompt='Profile: ' \
+			                                      --value="$default_repository_profile" \
+			                                      --placeholder='myprofilename')
+			default_repository_profile=''
+			test -n "$config_repository_profile" && break
+		done
+		run_command gum spin --title='Saving...' -- \
+		            aws configure --profile="$config_repository_profile" \
+		                set output json
+		run_command gum spin --title='Saving...' -- \
+		            aws configure --profile="$config_repository_profile" \
+		                set region "$config_repository_region"
+		created_new_profile=1
+	fi
+	echo "Profile: $config_repository_profile"
+
+	if [ "${created_new_profile:-0}" -eq 0 ]; then
+		config_access_key_id=$(
+			gum spin --title='Loading...' --show-output -- \
+			aws configure --profile="$config_repository_profile" \
+			    get aws_access_key_id || true
+		)
+	fi
+	while true; do
+		config_access_key_id=$(
+			printf "%s" "${config_access_key_id:-}" | \
+			gum input --prompt='Access key id: ' --placeholder='access key id'
+		)
+		test -n "$config_access_key_id" && break
+	done
+	echo "Access key id: $config_access_key_id"
+	run_command gum spin --title='Saving...' -- \
+	            aws configure --profile="$config_repository_profile" \
+	                set aws_access_key_id "$config_access_key_id"
+	unset config_access_key_id
+
+	if [ "${created_new_profile:-0}" -eq 0 ]; then
+		config_secret_access_key=$(
+			gum spin --title='Loading...' --show-output -- \
+			aws configure --profile="$config_repository_profile" \
+			    get aws_secret_access_key || true
+		)
+	fi
+	while true; do
+		config_secret_access_key=$(
+			printf "%s" "${config_secret_access_key:-}" | \
+			gum input --prompt='Secret access key: ' \
+			          --placeholder='secret access key' --password
+		)
+		test -n "$config_secret_access_key" && break
+	done
+	config_secret_access_masked=$(echo "$config_secret_access_key" | sed 's,.,•,g')
+	echo "Secret access key: $config_secret_access_masked"
+	run_command gum spin --title='Saving...' -- \
+	                aws configure --profile="$config_repository_profile" \
+	                    set aws_secret_access_key "$config_secret_access_key"
+	unset config_secret_access_key config_secret_access_masked
+
+	security_warning 'Remember to keep your credentials safe! This allows access to your storage system.'
+
+	run_command install -d -m 0755 "$user_config_profiles_dir"
+
+	if [ "${opt_dryrun:-0}" -eq 1 ]; then
+		creating_repository_config_file='/dev/stdout'
+	else
+		creating_repository_config_file="$target_repository_config_file"
+	fi
+
+	yq ".default.repository = \"$config_repository_url\" |
+	    .default.env.aws_region = \"$config_repository_region\" |
+	    .default.env.aws_profile = \"$config_repository_profile\"
+	   " < "$example_repository_config_file" > "$creating_repository_config_file"
+	test "${opt_dryrun:-0}" -eq 1 && echo
+
+	section 'Repository encryption configuration'
+
+	cd "$share_dir"
+
+	password_file=$(resticprofile show | awk '/ password-file:/ {print $2}')
+	run_command install -d -m 0700 "${password_file%/*}"
+
+	if [ -s "$password_file" ]; then
+		config_password_masked=$(gum style --background=7 'using existing')
+		password_choice='existing'
+	else
+		password_choice=$(gum choose --header='Password:' \
+		                                       --height=11 \
+		                                       --selected='1024 bytes' \
+		                                       "$manual_password" \
+		                                       '16 bytes' \
+		                                       '32 bytes' \
+		                                       '64 bytes' \
+		                                       '128 bytes' \
+		                                       '256 bytes' \
+		                                       '512 bytes' \
+		                                       '1024 bytes' \
+		                                       '2048 bytes' \
+		                                       '4096 bytes' \
+		                                       '8192 bytes')
+
+		if [ "${opt_dryrun:-0}" -eq 1 ]; then
+			creating_password_file='/dev/null'
+		else
+			creating_password_file="$password_file"
+			run_command install -m 0600 /dev/null "$creating_password_file"
+		fi
+
+		case "$password_choice" in
+			"$manual_password")
+				until [ -n "${config_password:-}" ]; do
+					config_password=$(
+						gum input --prompt='Password: ' \
+						          --placeholder='password or pass phrase' \
+						          --password
+					)
+				done
+				config_password_masked=$(echo "$config_password" | sed 's,.,•,g')
+				echo "$config_password" > "$creating_password_file"
+				unset config_password
+				;;
+			*' bytes')
+				run_resticprofile generate --random-key "${password_choice%% *}" > "$creating_password_file"
+				config_password_masked=$(gum style --background=7 'generated')
+				;;
+		esac
+	fi
+
+	echo "Password: $config_password_masked"
+
+	security_warning 'Remember to keep your password safe! This allows your backups to be encrypted and decrypted.'
+
+	section 'Repository initialization'
+
+	cd "$share_dir"
+
+	if ! run_command gum spin --title='Testing repository...' -- resticprofile snapshots; then
+		run_resticprofile init || fatal 'Unable to initialize repository'
+
+		# TODO: Possible to reflow this for readability?
+		security_warning 'Losing your password means that your data is irrecoverably lost. It is recommended to save your password to your password manager or similar secure storage.'
+
+		if [ "$password_choice" != "$manual_password" ] && \
+		     gum confirm --prompt.margin=0 --default=No 'View password?'; then
+			echo 'Password:'
+			cat "$password_file"
+		fi
+	else
+		echo 'Already initialized'
+	fi
+
+	section 'Repository test'
+
+	run_resticprofile snapshots && gum style --foreground=2 'Looking good!'
+
+	exit
+}

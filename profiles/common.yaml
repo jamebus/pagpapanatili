@@ -1,0 +1,13 @@
+{{ $user_config_dir := or .Env.PAGPAPANATILI_USER_CONFIG_DIR (print .Env.HOME "/.pagpapanatili") -}}
+---
+# yaml-language-server: $schema=https://creativeprojects.github.io/resticprofile/jsonschema/config-1.json
+
+version: "1"
+
+global:
+  restic-binary: "{{ .ConfigDir }}/restic-wrapper"
+  prevent-sleep: true
+
+default:
+  lock: "{{ .TempDir }}resticprofile-{{ .Env.USER }}-{{ .Profile.Name }}.lock"
+  password-file: "{{ $user_config_dir }}/password/default"

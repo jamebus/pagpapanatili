@@ -1,0 +1,113 @@
+{{ $relativehome := .Env.HOME | replaceR "^/(.+)" "$1" -}}
+---
+# yaml-language-server: $schema=https://creativeprojects.github.io/resticprofile/jsonschema/config-1.json
+
+version: "1"
+
+home:
+  inherit: default
+  # base-dir: restic-wrapper takes care of this because the directory is created
+  #           during the execution of the profile. The directory needs to exist
+  #           before we reach this point.
+
+  env:
+    resticprofile_snapshot_mountpoint: "{{ .TempDir }}resticprofile-{{ .Env.USER }}-{{ .Profile.Name }}-snapshot"
+
+  forget: &home_snapshot_scope
+    group-by: host,tags
+    host: "{{ .Hostname }}"
+    tag: &home_tags
+      - "{{ .Profile.Name }}"
+      - '{{ .Env.HOME | lower | replace "/" "" }}'
+  snapshots:
+    <<: *home_snapshot_scope
+  ls:
+    tag: *home_tags
+  mount:
+    tag: *home_tags
+  restore:
+    tag: *home_tags
+
+  backup:
+    run-before: |
+      set -eu
+
+      if [ -d "$RESTICPROFILE_SNAPSHOT_MOUNTPOINT" ]; then
+        echo 'ERROR: Snapshot mountpoint exists' 1>&2
+        exit 1
+      fi
+
+      mkdir "$RESTICPROFILE_SNAPSHOT_MOUNTPOINT"
+
+      echo 'Creating local snapshot...'
+      snapshot_date=$(tmutil localsnapshot / | \
+                      grep '^Created local snapshot with date: ' | awk '{print $6}')
+      test -n "$snapshot_date"
+      echo "Created local snapshot with date: $snapshot_date"
+
+      mount_apfs -s "com.apple.TimeMachine.${snapshot_date}.local" \
+                    /System/Volumes/Data "$RESTICPROFILE_SNAPSHOT_MOUNTPOINT"
+
+    run-after: |
+      umount "$RESTICPROFILE_SNAPSHOT_MOUNTPOINT"
+      rmdir "$RESTICPROFILE_SNAPSHOT_MOUNTPOINT"
+
+    run-after-fail: |
+      set -eu
+
+      if echo "$ERROR_STDERR" | grep '^ERROR: Snapshot mountpoint exists$' >/dev/null; then
+        echo "FAIL: Snapshot mountpoint exists" 1>&2
+        exit "ERROR_EXIT_CODE"
+      fi
+
+      umount "$RESTICPROFILE_SNAPSHOT_MOUNTPOINT" || true
+      rmdir "$RESTICPROFILE_SNAPSHOT_MOUNTPOINT"  || true
+
+    one-file-system: true
+    exclude-caches: true
+    exclude:
+      - "{{ $relativehome }}/.Trash"
+      - "{{ $relativehome }}/.bundle/cache"
+      - "{{ $relativehome }}/.cache"
+      - "{{ $relativehome }}/.cargo/git"
+      - "{{ $relativehome }}/.cargo/registry"
+      - "{{ $relativehome }}/.gem/ruby/*/cache"
+      - "{{ $relativehome }}/.npm/_cacache"
+      - "{{ $relativehome }}/.vagrant.d/boxes"
+      - "{{ $relativehome }}/.terraform.d/plugin-cache"
+      - "{{ $relativehome }}/Library/Application Support/**/Cache"
+      - "{{ $relativehome }}/Library/Application Support/**/Caches"
+      - "{{ $relativehome }}/Library/Application Support/**/Code Cache"
+      - "{{ $relativehome }}/Library/Application Support/**/GPUCache"
+      - "{{ $relativehome }}/Library/Application Support/**/GrShaderCache"
+      - "{{ $relativehome }}/Library/Application Support/**/Service Worker/CacheStorage"
+      - "{{ $relativehome }}/Library/Application Support/**/Service Worker/ScriptCache"
+      - "{{ $relativehome }}/Library/Application Support/**/ShaderCache"
+      - "{{ $relativehome }}/Library/Application Support/*/CachedData"
+      - "{{ $relativehome }}/Library/Caches"
+      - "{{ $relativehome }}/Library/CloudStorage"
+      - "{{ $relativehome }}/Library/Containers/**/Data/Cache"
+      - "{{ $relativehome }}/Library/Containers/**/Data/Library/Caches"
+      - "{{ $relativehome }}/Library/Containers/**/Library/Caches"
+      - "{{ $relativehome }}/Library/Containers/com.docker.docker/Data/vms/*/Docker.raw"
+      - "{{ $relativehome }}/Library/Group Containers/*/Library/Caches"
+      - "{{ $relativehome }}/VirtualBox VMs"
+      - .terraform/modules
+      - .terraform/providers
+    <<: *home_snapshot_scope
+    source: "{{ $relativehome }}"
+
+  retention:
+    after-backup: true
+    keep-within: 90d
+    keep-within-daily: 6m
+    keep-within-weekly: 1y
+    keep-within-monthly: 3y
+    keep-yearly: unlimited
+    keep-tag:
+      - forever
+    tag: true
+    host: true
+    prune: false
+    path: ""
+    <<: *home_snapshot_scope

@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://creativeprojects.github.io/resticprofile/jsonschema/config-1.json
+
+version: "1"
+
+currentdir:
+  inherit: default
+  base-dir: "{{ .Env.PAGPAPANATILI_PWD }}"
+
+  forget: &currentdir_snapshot_scope
+    group-by: host,tags,paths
+    host: "{{ .Hostname }}"
+    tag: &currentdir_tags
+      - "{{ .Profile.Name }}"
+    # keep-tag?
+  snapshots:
+    <<: *currentdir_snapshot_scope
+  ls:
+    tag: *currentdir_tags
+  mount:
+    tag: *currentdir_tags
+  restore:
+    tag: *currentdir_tags
+
+  backup:
+    one-file-system: true
+    exclude-caches: true
+    <<: *currentdir_snapshot_scope
+    source: "{{ .CurrentDir }}"
+
+  retention:
+    after-backup: true
+    keep-within: 90d
+    keep-within-daily: 6m
+    keep-within-weekly: 1y
+    keep-within-monthly: 3y
+    keep-yearly: unlimited
+    keep-tag:
+      - forever
+    tag: true
+    host: true
+    prune: false
+    path: "{{ .CurrentDir }}"
+    <<: *currentdir_snapshot_scope
