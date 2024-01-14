@@ -39,4 +39,5 @@ test:
 
 install: install-share install-examples install-profiles install-bin
 
-.PHONY: all install
+.PHONY: all test install install-share install-examples install-profiles \
+        install-bin
