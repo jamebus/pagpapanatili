@@ -20,6 +20,7 @@ usage() {
 	echo
 	echo '       config, configure    Configure'
 	echo '       version              Show version'
+	exit
 }
 
 while [ $# -ne 0 ]; do
