@@ -222,7 +222,7 @@ configure() {
 	run_command install -d -m 0700 "${password_file%/*}"
 
 	if [ -s "$password_file" ]; then
-		config_password_masked=$(gum style --background=7 'using existing')
+		config_password_masked=$(gum style --foreground=6 'using existing')
 		password_choice='existing'
 
 		action_message='Using existing password'
@@ -266,7 +266,7 @@ configure() {
 				;;
 			*' bytes')
 				run_resticprofile generate --random-key "${password_choice%% *}" > "$creating_password_file"
-				config_password_masked=$(gum style --background=7 'generated')
+				config_password_masked=$(gum style --foreground=6 'generated')
 
 				action_message='Generated and saved password'
 				;;
