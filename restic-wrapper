@@ -4,7 +4,12 @@ set -eu
 
 test "${PAGPAPANATILI_VERBOSE:-0}" -eq 1 && set -x
 
-backup_path=${RESTICPROFILE_SNAPSHOT_MOUNTPOINT:-${PAGPAPANATILI_PWD:-}}
+if [ "${PROFILE_COMMAND:-}" = 'backup' ]; then
+	backup_path="${RESTICPROFILE_SNAPSHOT_MOUNTPOINT:-${PAGPAPANATILI_PWD:-}}"
+else
+	backup_path="${PAGPAPANATILI_PWD:-}"
+fi
+
 gum log --level=info --time=datetime "Changing directory to: $backup_path"
 test -n "$backup_path" && cd "$backup_path"
 
