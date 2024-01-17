@@ -280,6 +280,8 @@ configure() {
 		     gum confirm --prompt.margin=0 --default=No 'View password?'; then
 			echo 'Password:'
 			cat "$password_file"
+			echo
+			# TODO: Prompt for confirmation and clear password from terminal?
 		fi
 	else
 		echo
