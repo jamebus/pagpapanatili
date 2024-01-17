@@ -3,7 +3,7 @@
 set -eu
 
 user_config_dir="${PAGPAPANATILI_USER_CONFIG_DIR:-${HOME}/.pagpapanatili}"
-# ayusin_user_config_dir="${AYUSIN_USER_CONFIG_DIR:-${HOME}/.ayusin}" # TODO
+ayusin_user_config_dir="${AYUSIN_USER_CONFIG_DIR:-${HOME}/.ayusin}"
 user_config_profiles_dir="${user_config_dir}/profiles.d"
 
 for v in $(printenv | awk -F= '/^GUM_/ {print $1}'); do unset "$v"; done
@@ -24,6 +24,10 @@ export GUM_INPUT_WIDTH GUM_INPUT_PROMPT_FOREGROUND GUM_INPUT_PROMPT_BOLD \
 # shellcheck disable=SC2154
 example_repository_config_file="${share_dir}/examples/repository.yaml"
 target_repository_config_file="${user_config_profiles_dir}/repository.yaml"
+example_ayusin_backup_home_task_file="${share_dir}/examples/ayusin-backup-home-task"
+target_ayusin_backup_home_task_file="${ayusin_user_config_dir}/tasks.d/zzz-pagpapanatili-backup-home"
+example_ayusin_prune_task_file="${share_dir}/examples/ayusin-prune-task"
+target_ayusin_prune_task_file="${ayusin_user_config_dir}/tasks.d/zzz-pagpapanatili-prune"
 
 terminal_width() {
 	# shellcheck disable=SC3043
@@ -45,6 +49,11 @@ security_warning() {
 	echo
 }
 
+tala() {
+	gum style --width=$(($(terminal_width) - 3)) "${1:-Unknown}"
+	echo
+}
+
 action_completed() {
 	gum style --foreground=2 "➡ ${1:-Unknown}"
 }
@@ -58,7 +67,8 @@ configure() {
 	      new_profile created_new_profile creating_repository_config_file \
 	      password_file password_choice manual_password \
 	      config_password config_password_masked \
-	      creating_password_file
+	      creating_password_file default_ayusin_backup_home_choice \
+	      default_ayusin_prune_choice action_message
 
 	new_profile='• NEW PROFILE •'
 	manual_password='• CHOOSE MY OWN •'
@@ -301,6 +311,56 @@ configure() {
 	if run_resticprofile snapshots; then
 		echo
 		action_completed 'Repository test successful'
+	fi
+
+	echo
+	section 'Ayusin tasks'
+	if command -v ayusin >/dev/null; then
+		run_command install -d -m 0700 "${target_ayusin_backup_home_task_file%/*}"
+		test -f "${target_ayusin_backup_home_task_file}.disabled" && \
+		        default_ayusin_backup_home_choice='No'
+
+		# TODO: Possible to reflow this for readability?
+		tala "It's recommended to create a backup at least once a day. Would you like to install an ayusin task to back up your home directory?"
+
+		if gum confirm --prompt.margin=0 \
+		               --default="${default_ayusin_backup_home_choice:-Yes}" \
+		               "Install ayusin task?"; then
+			run_command rm -f "${target_ayusin_backup_home_task_file}.disabled"
+			run_command install -m 0555 "$example_ayusin_backup_home_task_file" \
+			                            "$target_ayusin_backup_home_task_file"
+			action_completed 'Backup home task installed'
+		else
+			run_command rm -f "$target_ayusin_backup_home_task_file"
+			run_command install -m 0555 "$example_ayusin_backup_home_task_file" \
+			                            "${target_ayusin_backup_home_task_file}.disabled"
+			action_completed 'Backup home task disabled'
+		fi
+
+		echo
+
+		run_command install -d -m 0700 "${target_ayusin_prune_task_file%/*}"
+		test -f "${target_ayusin_prune_task_file}.disabled" && \
+		        default_ayusin_prune_choice='No'
+
+		# TODO: Possible to reflow this for readability?
+		tala "It's recommended to prune the repository once a month. Would you like to install an ayusin task to prune your repository?"
+
+		if gum confirm --prompt.margin=0 \
+		               --default="${default_ayusin_prune_choice:-Yes}" \
+		               "Install ayusin task?"; then
+			run_command rm -f "${target_ayusin_prune_task_file}.disabled"
+			run_command install -m 0555 "$example_ayusin_prune_task_file" \
+			                            "$target_ayusin_prune_task_file"
+			action_completed 'Prune task installed'
+		else
+			run_command rm -f "$target_ayusin_prune_task_file"
+			run_command install -m 0555 "$example_ayusin_prune_task_file" \
+			                            "${target_ayusin_prune_task_file}.disabled"
+			action_completed 'Prune task disabled'
+		fi
+	else
+		echo 'Ayusin not installed'
 	fi
 
 	exit
