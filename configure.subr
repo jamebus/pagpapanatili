@@ -81,6 +81,12 @@ configure() {
 	: "${config_repository_region:=us-east-1}"
 	: "${config_repository_profile:=pagpapanatili}"
 
+	if [ "${opt_dryrun:-0}" -eq 1 ]; then
+		creating_repository_config_file='/dev/stdout'
+	else
+		creating_repository_config_file="$target_repository_config_file"
+	fi
+
 	section 'Repository configuration'
 
 	while true; do
@@ -98,6 +104,15 @@ configure() {
 		test -n "$config_repository_region" && break
 	done
 	echo "Region: $config_repository_region"
+
+	run_command install -d -m 0755 "$user_config_profiles_dir"
+
+	yq ".default.repository = \"$config_repository_url\" |
+	    .default.env.aws_region = \"$config_repository_region\"
+	   " < "$example_repository_config_file" > "$creating_repository_config_file"
+
+	echo
+	action_completed 'Config saved'
 
 	echo
 	section 'Storage authentication configuration'
@@ -179,14 +194,6 @@ configure() {
 	unset config_secret_access_key config_secret_access_masked
 
 	security_warning 'Remember to keep your credentials safe! This allows access to your storage system.'
-
-	run_command install -d -m 0755 "$user_config_profiles_dir"
-
-	if [ "${opt_dryrun:-0}" -eq 1 ]; then
-		creating_repository_config_file='/dev/stdout'
-	else
-		creating_repository_config_file="$target_repository_config_file"
-	fi
 
 	yq ".default.repository = \"$config_repository_url\" |
 	    .default.env.aws_region = \"$config_repository_region\" |
