@@ -45,6 +45,10 @@ security_warning() {
 	echo
 }
 
+action_completed() {
+	gum style --foreground=2 "➡ ${1:-Unknown}"
+}
+
 configure() {
 	# shellcheck disable=SC3043
 	local config_repository_url config_repository_region \
@@ -190,6 +194,9 @@ configure() {
 	   " < "$example_repository_config_file" > "$creating_repository_config_file"
 	test "${opt_dryrun:-0}" -eq 1 && echo
 
+	action_completed 'Configs saved'
+
+	echo
 	section 'Repository encryption configuration'
 
 	cd "$share_dir"
@@ -200,6 +207,8 @@ configure() {
 	if [ -s "$password_file" ]; then
 		config_password_masked=$(gum style --background=7 'using existing')
 		password_choice='existing'
+
+		action_message='Using existing password'
 	else
 		password_choice=$(gum choose --header='Password:' \
 		                                       --height=11 \
@@ -235,15 +244,22 @@ configure() {
 				config_password_masked=$(echo "$config_password" | sed 's,.,•,g')
 				echo "$config_password" > "$creating_password_file"
 				unset config_password
+
+				action_message='Saved password'
 				;;
 			*' bytes')
 				run_resticprofile generate --random-key "${password_choice%% *}" > "$creating_password_file"
 				config_password_masked=$(gum style --background=7 'generated')
+
+				action_message='Generated and saved password'
 				;;
 		esac
 	fi
 
 	echo "Password: $config_password_masked"
+
+	echo
+	action_completed "$action_message"
 
 	security_warning 'Remember to keep your password safe! This allows your backups to be encrypted and decrypted.'
 
@@ -254,6 +270,9 @@ configure() {
 	if ! run_command gum spin --title='Testing repository...' -- resticprofile snapshots; then
 		run_resticprofile init || fatal 'Unable to initialize repository'
 
+		echo
+		action_completed 'Repository initialized'
+
 		# TODO: Possible to reflow this for readability?
 		security_warning 'Losing your password means that your data is irrecoverably lost. It is recommended to save your password to your password manager or similar secure storage.'
 
@@ -263,12 +282,17 @@ configure() {
 			cat "$password_file"
 		fi
 	else
-		echo 'Already initialized'
+		echo
+		action_completed 'Repository already initialized'
+		echo
 	fi
 
 	section 'Repository test'
 
-	run_resticprofile snapshots && gum style --foreground=2 'Looking good!'
+	if run_resticprofile snapshots; then
+		echo
+		action_completed 'Repository test successful'
+	fi
 
 	exit
 }
