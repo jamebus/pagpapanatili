@@ -10,7 +10,7 @@ set -eu
 # restic >= 0.16.0
 # resticprofile >= 0.23.0
 
-version='0.2.2'
+version='0.2.3'
 me="${0##*/}"
 share_dir="${0%/*}/../share/pagpapanatili"
 
