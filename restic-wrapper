@@ -10,8 +10,10 @@ else
 	backup_path="${PAGPAPANATILI_PWD:-}"
 fi
 
-gum log --level=info --time=datetime "Changing directory to: $backup_path"
-test -n "$backup_path" && cd "$backup_path"
+if [ -n "$backup_path" ]; then
+	gum log --level=info --time=datetime "Changing directory to: $backup_path"
+	cd "$backup_path"
+fi
 
 rc=0
 restic "$@" || rc=$?
