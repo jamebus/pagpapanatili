@@ -21,13 +21,25 @@ usage() {
 	echo "       $me [options] [resticprofile flags] [profile name.]restic-command [restic flags]"
 	echo "       $me [options] [resticprofile flags] [profile name.]resticprofile-command [command specific flags]"
 	echo
-	echo '       --version            Show version'
-	echo '       -v, --verbose        Enable verbose output'
-	echo '       -n, --dry-run        Show what would have happened'
-	echo '       -h, --help           Show this help'
+	echo '       --version               Show version'
+	echo '       -v, --verbose           Enable verbose output'
+	echo '       -n, --dry-run           Show what would have happened'
+	echo '       -h, --help              Show this help'
+	echo '       --help-resticprofile    Show the help for resticprofile'
+	echo '       --help-restic           Show the help for restic'
 	echo
-	echo '       config, configure    Configure'
-	echo '       version              Show version'
+	echo '       config, configure       Configure'
+	echo '       version                 Show version'
+	exit
+}
+
+usage_resticprofile() {
+	resticprofile --help
+	exit
+}
+
+usage_restic() {
+	restic --help
 	exit
 }
 
@@ -49,6 +61,12 @@ while [ $# -ne 0 ]; do
 			;;
 		-h|--help)
 			usage
+			;;
+		--help-resticprofile)
+			usage_resticprofile
+			;;
+		--help-restic)
+			usage_restic
 			;;
 		config|configure)
 			. "${share_dir}/configure.subr"
