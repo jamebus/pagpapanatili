@@ -91,6 +91,7 @@ home:
       - "{{ $relativehome }}/Library/Containers/**/Library/Caches"
       - "{{ $relativehome }}/Library/Containers/com.docker.docker/Data/vms/*/Docker.raw"
       - "{{ $relativehome }}/Library/Group Containers/*/Library/Caches"
+      - "{{ $relativehome }}/Library/Mobile Documents"
       - "{{ $relativehome }}/VirtualBox VMs"
       - .terraform/modules
       - .terraform/providers
