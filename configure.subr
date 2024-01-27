@@ -146,11 +146,13 @@ configure() {
 	      password_file password_choice manual_password \
 	      config_password config_password_masked \
 	      creating_password_file default_ayusin_backup_home_choice \
-	      default_ayusin_prune_choice action_message
+	      default_ayusin_prune_choice action_message \
+	      default_repository_profile_prefix random_token
 
 	new_profile='• NEW PROFILE •'
 	manual_password='• CHOOSE MY OWN •'
 	default_repository_profile='pagpapanatili'
+	default_repository_profile_prefix='pagpapanatili-'
 
 	for f in "$target_repository_config_file" "$example_repository_config_file"; do
 		if [ -f "$f" ]; then
@@ -218,9 +220,16 @@ configure() {
 		                                       --selected="$config_repository_profile" \
 		                                       "$new_profile" $aws_profiles)
 
-		echo "$aws_profiles" | \
-		grep "[[:<:]]${default_repository_profile}[[:>:]]" >/dev/null && \
-		default_repository_profile=''
+		if [ "$config_repository_profile" = "$new_profile" ]; then
+			while echo "$aws_profiles" | \
+				grep "[[:<:]]${default_repository_profile}[[:>:]]" >/dev/null; do
+				random_token=$(resticprofile generate --random-key 16 | \
+				               sed 's,[^[:alnum:]],,g')
+				default_repository_profile="${default_repository_profile_prefix}${random_token}"
+			done
+
+			echo "Profile: $(gum style --foreground=6 'new profile')"
+		fi
 	else
 		config_repository_profile="$new_profile"
 		created_new_profile=1
