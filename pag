@@ -9,6 +9,7 @@ set -eu
 # gum
 # restic >= 0.16.0
 # resticprofile >= 0.23.0
+# yq
 
 version='0.3.0'
 me="${0##*/}"
