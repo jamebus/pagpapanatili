@@ -1,4 +1,8 @@
 # yaml-language-server: $schema=https://creativeprojects.github.io/resticprofile/jsonschema/config-1.json
+#
+# Warning: This file is managed by pag(1) and will be overwritten during a
+# configure operation
+#
 
 version: "1"
 
