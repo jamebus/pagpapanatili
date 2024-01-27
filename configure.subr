@@ -22,6 +22,7 @@ export GUM_INPUT_WIDTH GUM_INPUT_PROMPT_FOREGROUND GUM_INPUT_PROMPT_BOLD \
 # https://github.com/koalaman/shellcheck/issues/356#issuecomment-1217754971
 
 # shellcheck disable=SC2154
+messages_dir="${share_dir}/messages"
 example_repository_config_file="${share_dir}/examples/repository.yaml"
 target_repository_config_file="${user_config_profiles_dir}/repository.yaml"
 example_ayusin_backup_home_task_file="${share_dir}/examples/ayusin-backup-home-task"
@@ -37,20 +38,97 @@ terminal_width() {
 	echo "${term_size#* }"
 }
 
+#
+# 1 left/center
+# 2 margin
+# 3 foreground color
+# - message
+#
+heading_message() {
+	# shellcheck disable=SC3043
+	local message message_length terminal_width \
+	      heading_left_pad heading_left_line \
+	      heading_right_pad heading_right_line \
+	      alignment margin foreground_color
+
+	alignment="${1:-}"
+	margin="${2:-0}"
+	foreground_color="${3:-}"
+	shift 3
+
+	message="$*"
+	message_length=${#message}
+	terminal_width=$(terminal_width)
+
+	case "$alignment" in
+		left)
+			heading_left_pad=1
+			;;
+		center)
+			heading_left_pad=$(((terminal_width - message_length - 2 - margin * 2) / 2))
+			;;
+		*)
+			heading_left_pad=1
+			;;
+	esac
+
+	heading_left_line=$(printf "%-${heading_left_pad}s" '' | tr ' ' '─')
+	heading_right_pad=$((terminal_width - heading_left_pad - message_length - 2 - margin * 2))
+	heading_right_line=$(printf "%-${heading_right_pad}s" '' | tr ' ' '─')
+
+	gum style --foreground="$foreground_color" \
+	          "$(printf "%-${margin}s" '')$heading_left_line $message $heading_right_line$(printf "%-${margin}s" '')"
+}
+
+#
+# 1 margin
+# 2 foreground_color
+#
+heading_line() {
+	# shellcheck disable=SC3043
+	local terminal_width margin width
+
+	terminal_width=$(terminal_width)
+	margin="${1:-0}"
+	width=$((terminal_width - margin * 2))
+
+	gum style --foreground="${2:-}" \
+	          "$(printf "%-${margin}s" '')$(printf "%-${width}s" '' | tr ' ' '─')$(printf "%-${margin}s" '')"
+}
+
 section() {
-	gum style --underline --foreground=5 "${1:-Unknown}"
+	heading_message left 0 5 "$@"
+}
+
+print_markdown() {
+	# shellcheck disable=SC3043
+	local terminal_width
+
+	terminal_width=$(terminal_width)
+
+	fmt -w "$((terminal_width - 4))" "${messages_dir}/${1}.md" | \
+	sed 's,\([[:punct:]]\)  ,\1 ,g' | \
+	gum format --type=markdown
+}
+
+section_documentation() {
+	print_markdown "$@"
+	echo
 }
 
 security_warning() {
 	echo
-	gum style --bold --foreground=5 --width=$(($(terminal_width) - 3)) \
-	          --border=rounded --border-foreground=5 --align=center \
-	          "⚠ ${1:-Unknown} ⚠"
+	heading_message center 2 3 'Security Warning'
+	print_markdown "$@" | sed '1d'
+	heading_line 2 3
 	echo
 }
 
-tala() {
-	gum style --width=$(($(terminal_width) - 3)) "${1:-Unknown}"
+info_notice() {
+	echo
+	heading_message center 2 6 'Info Notice'
+	print_markdown "$@" | sed '1d'
+	heading_line 2 6
 	echo
 }
 
@@ -99,6 +177,8 @@ configure() {
 
 	section 'Repository configuration'
 
+	section_documentation 'repository-configuration'
+
 	while true; do
 		config_repository_url=$(gum input --prompt='URL: ' \
 		                                  --placeholder='s3:s3.foobar.com/mybucket/restic' \
@@ -130,6 +210,8 @@ configure() {
 	aws_profiles=$(gum spin --title='Loading...' \
 	                        --show-output -- aws configure list-profiles)
 	if [ -n "$aws_profiles" ]; then
+		section_documentation 'storage-authentication-configuration-has-profiles'
+
 		# For $aws_profiles
 		# shellcheck disable=SC2086
 		config_repository_profile=$(gum choose --header='Profile:' \
@@ -144,6 +226,8 @@ configure() {
 		created_new_profile=1
 	fi
 	if [ "$config_repository_profile" = "$new_profile" ]; then
+		section_documentation 'storage-authentication-configuration-new-profile'
+
 		while true; do
 			config_repository_profile=$(gum input --prompt='Profile: ' \
 			                                      --value="$default_repository_profile" \
@@ -203,7 +287,7 @@ configure() {
 	                    set aws_secret_access_key "$config_secret_access_key"
 	unset config_secret_access_key config_secret_access_masked
 
-	security_warning 'Remember to keep your credentials safe! This allows access to your storage system.'
+	security_warning 'security-credentials'
 
 	yq ".default.repository = \"$config_repository_url\" |
 	    .default.env.aws_region = \"$config_repository_region\" |
@@ -215,6 +299,8 @@ configure() {
 
 	echo
 	section 'Repository encryption configuration'
+
+	section_documentation 'repository-encryption-configuration'
 
 	cd "$share_dir"
 
@@ -278,9 +364,10 @@ configure() {
 	echo
 	action_completed "$action_message"
 
-	security_warning 'Remember to keep your password safe! This allows your backups to be encrypted and decrypted.'
+	security_warning 'security-password'
 
 	section 'Repository initialization'
+	echo
 
 	cd "$share_dir"
 
@@ -290,8 +377,7 @@ configure() {
 		echo
 		action_completed 'Repository initialized'
 
-		# TODO: Possible to reflow this for readability?
-		security_warning 'Losing your password means that your data is irrecoverably lost. It is recommended to save your password to your password manager or similar secure storage.'
+		section_documentation 'save-your-password'
 
 		if [ "$password_choice" != "$manual_password" ] && \
 		     gum confirm --prompt.margin=0 --default=No 'View password?'; then
@@ -301,12 +387,12 @@ configure() {
 			# TODO: Prompt for confirmation and clear password from terminal?
 		fi
 	else
-		echo
 		action_completed 'Repository already initialized'
 		echo
 	fi
 
 	section 'Repository test'
+	echo
 
 	if run_resticprofile snapshots; then
 		echo
@@ -320,8 +406,7 @@ configure() {
 		test -f "${target_ayusin_backup_home_task_file}.disabled" && \
 		        default_ayusin_backup_home_choice='No'
 
-		# TODO: Possible to reflow this for readability?
-		tala "It's recommended to create a backup at least once a day. Would you like to install an ayusin task to back up your home directory?"
+		section_documentation 'ayusin-backup'
 
 		if gum confirm --prompt.margin=0 \
 		               --default="${default_ayusin_backup_home_choice:-Yes}" \
@@ -337,14 +422,11 @@ configure() {
 			action_completed 'Backup home task disabled'
 		fi
 
-		echo
-
 		run_command install -d -m 0700 "${target_ayusin_prune_task_file%/*}"
 		test -f "${target_ayusin_prune_task_file}.disabled" && \
 		        default_ayusin_prune_choice='No'
 
-		# TODO: Possible to reflow this for readability?
-		tala "It's recommended to prune the repository once a month. Would you like to install an ayusin task to prune your repository?"
+		section_documentation 'ayusin-prune'
 
 		if gum confirm --prompt.margin=0 \
 		               --default="${default_ayusin_prune_choice:-Yes}" \
@@ -360,8 +442,14 @@ configure() {
 			action_completed 'Prune task disabled'
 		fi
 	else
+		echo
 		echo 'Ayusin not installed'
 	fi
+
+	echo
+	section 'Configuration completed'
+	echo
+	action_completed "Configuration completed. You're all set to back up!"
 
 	exit
 }
