@@ -34,13 +34,11 @@ usage() {
 }
 
 usage_resticprofile() {
-	resticprofile --help
-	exit
+	run_command exec resticprofile --help
 }
 
 usage_restic() {
-	restic --help
-	exit
+	run_command exec restic --help
 }
 
 while [ $# -ne 0 ]; do
