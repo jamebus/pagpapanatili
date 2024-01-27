@@ -1,0 +1,24 @@
+# shellcheck shell=sh
+
+set -eu
+
+aws_wrapper() {
+	# shellcheck disable=SC3043
+	local aws_profile aws_region
+
+	# shellcheck disable=SC2154
+	test -f "$target_repository_config_file" || \
+	fatal 'Missing repository configuration file. Has configure been run?'
+
+	aws_profile=$(yq '.default.env.aws_profile // ""' "$target_repository_config_file")
+	test -n "$aws_profile" || \
+	fatal 'Missing aws_profile value. Has configure been run?'
+
+	aws_region=$(yq '.default.env.aws_region // ""' "$target_repository_config_file")
+	test -n "$aws_region" || \
+	fatal 'Missing aws_region value. Has configure been run?'
+
+	run_command exec aws --profile="$aws_profile" --region="$aws_region" "$@"
+
+	exit
+}

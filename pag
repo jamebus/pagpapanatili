@@ -29,6 +29,7 @@ usage() {
 	echo '       --help-restic           Show the help for restic'
 	echo
 	echo '       config, configure       Configure'
+	echo '       aws                     Wrapper for awscli (sets profile/region)'
 	echo '       version                 Show version'
 	exit
 }
@@ -69,6 +70,13 @@ while [ $# -ne 0 ]; do
 		config|configure)
 			. "${share_dir}/configure.subr"
 			configure
+			;;
+		aws)
+			. "${share_dir}/configure.subr"
+			. "${share_dir}/aws.subr"
+
+			shift
+			aws_wrapper "$@"
 			;;
 		*)
 			break

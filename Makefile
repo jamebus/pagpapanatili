@@ -21,7 +21,7 @@ install-bin: mkdirs
 install-share: mkdirs
 	install -m ${filemode} profiles.yaml "${sharedir}"
 	install -m ${binmode} restic-wrapper "${sharedir}"
-	install -m ${filemode} shared.subr configure.subr "${sharedir}"
+	install -m ${filemode} shared.subr configure.subr aws.subr "${sharedir}"
 
 install-examples: mkdirs
 	install -m ${filemode} examples/* "${examplesdir}"
