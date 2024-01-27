@@ -394,9 +394,11 @@ configure() {
 	section 'Repository test'
 	echo
 
-	if run_resticprofile snapshots; then
+	if run_resticprofile snapshots --compact --latest=1 --path=/; then
 		echo
 		action_completed 'Repository test successful'
+	else
+		fatal 'Repository test failed'
 	fi
 
 	echo
