@@ -13,11 +13,19 @@ maybe_run_command() {
 }
 
 run_command() {
+	# shellcheck disable=SC3043
+	local using_exec rc
+
+	test "$1" = 'exec' && using_exec=1
+
 	if [ "${opt_dryrun:-0}" -eq 1 ]; then
 		set -- echo '⚪️' "$@"
 	fi
 
-	"$@"
+	rc=0
+	"$@" || rc=$?
+
+	test "${using_exec:-0}" -eq 1 && exit $rc || return $rc
 }
 
 setup_options() {
