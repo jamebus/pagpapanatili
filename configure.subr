@@ -154,6 +154,9 @@ configure() {
 	default_repository_profile='pagpapanatili'
 	default_repository_profile_prefix='pagpapanatili-'
 
+	section 'Introduction'
+	section_documentation 'prompts'
+
 	for f in "$target_repository_config_file" "$example_repository_config_file"; do
 		if [ -f "$f" ]; then
 			config_repository_url=$(yq '.default.repository // ""' "$f")
