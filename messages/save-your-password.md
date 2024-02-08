@@ -1,8 +1,8 @@
 # Consider saving your password
 
-Your password has been saved. You won't need it again to use your backups. You
+Your password has been saved; you won't need it again to use your backups. You
 may wish to store your password elsewhere in case your saved password becomes
-unavailable. This can happen during drive failures or when installing to a fresh
+unavailable. This can happen during drive failures or when restoring to a fresh
 machine.
 
 Losing your password means that your backups are **irrecoverably lost**. It is
