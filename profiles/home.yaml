@@ -27,6 +27,8 @@ home:
     tag: *home_tags
   restore:
     tag: *home_tags
+  find:
+    tag: *home_tags
 
   backup:
     run-before: |

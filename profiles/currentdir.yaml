@@ -20,6 +20,8 @@ currentdir:
     tag: *currentdir_tags
   restore:
     tag: *currentdir_tags
+  find:
+    tag: *currentdir_tags
 
   backup:
     one-file-system: true
