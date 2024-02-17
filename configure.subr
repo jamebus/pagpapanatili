@@ -383,7 +383,7 @@ configure() {
 
 	cd "$share_dir"
 
-	if ! run_command gum spin --title='Testing repository...' -- resticprofile snapshots; then
+	if ! run_command gum spin --title='Checking repository...' -- resticprofile cat config; then
 		run_resticprofile init || fatal 'Unable to initialize repository'
 
 		echo
