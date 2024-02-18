@@ -22,12 +22,16 @@ home:
   snapshots:
     <<: *home_snapshot_scope
   ls:
+    host: "{{ .Hostname }}"
     tag: *home_tags
   mount:
+    host: "{{ .Hostname }}"
     tag: *home_tags
   restore:
+    host: "{{ .Hostname }}"
     tag: *home_tags
   find:
+    host: "{{ .Hostname }}"
     tag: *home_tags
 
   backup:

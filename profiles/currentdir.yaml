@@ -15,13 +15,21 @@ currentdir:
   snapshots:
     <<: *currentdir_snapshot_scope
   ls:
+    host: "{{ .Hostname }}"
     tag: *currentdir_tags
+    path: "{{ .CurrentDir }}"
   mount:
+    host: "{{ .Hostname }}"
     tag: *currentdir_tags
+    path: "{{ .CurrentDir }}"
   restore:
+    host: "{{ .Hostname }}"
     tag: *currentdir_tags
+    path: "{{ .CurrentDir }}"
   find:
+    host: "{{ .Hostname }}"
     tag: *currentdir_tags
+    path: "{{ .CurrentDir }}"
 
   backup:
     one-file-system: true
