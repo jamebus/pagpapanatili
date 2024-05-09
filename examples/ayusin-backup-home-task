@@ -11,6 +11,6 @@ task_description='Backup home directory'
 
 task_start
 
-$DRYRUN pag home.backup
+$DRYRUN pag home.backup || task_fail
 
 task_end

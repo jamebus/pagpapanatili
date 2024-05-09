@@ -12,7 +12,7 @@ task_description='Prune pagpapanatili repository'
 task_start
 task_lastrun_days 30 || task_skip
 
-$DRYRUN pag prune
+$DRYRUN pag prune || task_fail
 
 task_update_lastrun
 task_end
