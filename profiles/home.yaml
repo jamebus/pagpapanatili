@@ -63,7 +63,7 @@ home:
 
       if echo "$ERROR_STDERR" | grep '^ERROR: Snapshot mountpoint exists$' >/dev/null; then
         echo "FAIL: Snapshot mountpoint exists" 1>&2
-        exit "ERROR_EXIT_CODE"
+        exit "$ERROR_EXIT_CODE"
       fi
 
       umount "$RESTICPROFILE_SNAPSHOT_MOUNTPOINT" || true
