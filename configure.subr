@@ -292,7 +292,7 @@ configure() {
 		)
 		test -n "$config_secret_access_key" && break
 	done
-	config_secret_access_masked=$(echo "$config_secret_access_key" | sed 's,.,•,g')
+	config_secret_access_masked=$(echo "$config_secret_access_key" | sed 's,.,*,g')
 	echo "Secret access key: $config_secret_access_masked"
 	run_command gum spin --title='Saving...' -- \
 	                aws configure --profile="$config_repository_profile" \
@@ -358,7 +358,7 @@ configure() {
 						          --password
 					)
 				done
-				config_password_masked=$(echo "$config_password" | sed 's,.,•,g')
+				config_password_masked=$(echo "$config_password" | sed 's,.,*,g')
 				echo "$config_password" > "$creating_password_file"
 				unset config_password
 
