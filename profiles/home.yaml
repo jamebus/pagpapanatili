@@ -1,4 +1,5 @@
 {{ $relativehome := .Env.HOME | replaceR "^/(.+)" "$1" -}}
+{{ $snapshot_mountpoint := print .TempDir "resticprofile-" .Env.USER "-" .Profile.Name "-snapshot" -}}
 ---
 # yaml-language-server: $schema=https://creativeprojects.github.io/resticprofile/jsonschema/config-1.json
 
@@ -6,12 +7,9 @@ version: "1"
 
 home:
   inherit: default
-  # base-dir: restic-wrapper takes care of this because the directory is created
-  #           during the execution of the profile. The directory needs to exist
-  #           before we reach this point.
 
   env:
-    resticprofile_snapshot_mountpoint: "{{ .TempDir }}resticprofile-{{ .Env.USER }}-{{ .Profile.Name }}-snapshot"
+    resticprofile_snapshot_mountpoint: "{{ $snapshot_mountpoint }}"
 
   forget: &home_snapshot_scope
     group-by: host,tags
@@ -69,6 +67,8 @@ home:
       umount "$RESTICPROFILE_SNAPSHOT_MOUNTPOINT" || true
       rmdir "$RESTICPROFILE_SNAPSHOT_MOUNTPOINT"  || true
 
+    source-relative: true
+    source-base: "{{ $snapshot_mountpoint }}"
     one-file-system: true
     exclude-caches: true
     exclude:

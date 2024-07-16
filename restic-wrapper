@@ -4,17 +4,6 @@ set -eu
 
 test "${PAGPAPANATILI_VERBOSE:-0}" -eq 1 && set -x
 
-if [ "${PROFILE_COMMAND:-}" = 'backup' ]; then
-	backup_path="${RESTICPROFILE_SNAPSHOT_MOUNTPOINT:-${PAGPAPANATILI_PWD:-}}"
-else
-	backup_path="${PAGPAPANATILI_PWD:-}"
-fi
-
-if [ -n "$backup_path" ]; then
-	gum log --level=info --time=datetime "Changing directory to: $backup_path"
-	cd "$backup_path"
-fi
-
 rc=0
 restic "$@" || rc=$?
 

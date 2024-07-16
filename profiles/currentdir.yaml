@@ -4,7 +4,6 @@ version: "1"
 
 currentdir:
   inherit: default
-  base-dir: "{{ .Env.PAGPAPANATILI_PWD }}"
 
   forget: &currentdir_snapshot_scope
     group-by: host,tags,paths
