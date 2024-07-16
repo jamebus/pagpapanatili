@@ -317,6 +317,8 @@ configure() {
 	cd "$share_dir"
 
 	password_file=$(resticprofile show | awk '/ password-file:/ {print $2}')
+	test -n "$password_file" || \
+	  fatal 'Unable to get password-file path. This is likely a bug. Please report.'
 	run_command install -d -m 0700 "${password_file%/*}"
 
 	if [ -s "$password_file" ]; then
