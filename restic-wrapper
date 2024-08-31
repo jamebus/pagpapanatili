@@ -8,7 +8,7 @@ rc=0
 restic "$@" || rc=$?
 
 if [ "${PROFILE_COMMAND:-}" = 'backup' ] && [ $rc -eq 3 ]; then
-	gum log --level=warn --time=datetime 'Some source files could not be read (incomplete snapshot)'
+	gum log --level=warn --time=datetime 'Some source files could not be read (incomplete snapshot with remaining files created)'
 	exit 0
 fi
 
