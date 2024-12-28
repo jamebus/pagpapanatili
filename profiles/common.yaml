@@ -1,6 +1,6 @@
 {{ $user_config_dir := or .Env.PAGPAPANATILI_USER_CONFIG_DIR (print .Env.HOME "/.pagpapanatili") -}}
 ---
-# yaml-language-server: $schema=https://creativeprojects.github.io/resticprofile/jsonschema/config-1.json
+# yaml-language-server: $schema=https://creativeprojects.github.io/resticprofile/jsonschema/config.json
 
 version: "1"
 

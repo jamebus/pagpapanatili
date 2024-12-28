@@ -1,7 +1,7 @@
 {{ $relativehome := .Env.HOME | replaceR "^/(.+)" "$1" -}}
 {{ $snapshot_mountpoint := print .TempDir "resticprofile-" .Env.USER "-" .Profile.Name "-snapshot" -}}
 ---
-# yaml-language-server: $schema=https://creativeprojects.github.io/resticprofile/jsonschema/config-1.json
+# yaml-language-server: $schema=https://creativeprojects.github.io/resticprofile/jsonschema/config.json
 
 version: "1"
 
