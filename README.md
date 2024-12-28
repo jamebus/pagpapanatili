@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD024 -->
 # Pagpapanatili backup tooling
 
 - [Introduction](#introduction)
@@ -185,7 +186,7 @@ pag home.backup
 pag currentdir.backup
 ```
 
-Further reading:
+#### Further reading
 
 - [Backing up — restic documentation](https://restic.readthedocs.io/en/stable/040_backup.html)
 
@@ -213,7 +214,7 @@ pag home.snapshots --latest=10
 pag home.restore -i ~/Downloads --target=. snapshotid
 ```
 
-Further reading:
+#### Further reading
 
 - [Restoring from backup — restic documentation](https://restic.readthedocs.io/en/stable/050_restore.html)
 
@@ -297,7 +298,7 @@ If you wish to add new profiles or override existing ones, add new yaml files to
 `~/.pagpapanatili/profiles.d` containing the changes you want. Remember to take
 advantage of configuration merging to get the best result.
 
-Further reading:
+### Further reading
 
 - [Includes :: resticprofile](https://creativeprojects.github.io/resticprofile/configuration/include/index.html)
 - [Reference :: resticprofile](https://creativeprojects.github.io/resticprofile/configuration/reference/index.html)
