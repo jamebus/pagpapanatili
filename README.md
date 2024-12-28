@@ -192,6 +192,8 @@ pag currentdir.backup
 
 ### Restore
 
+#### Using the command line
+
 ```sh
 # Restore latest Desktop directory to a temporary directory. You can use the
 # special keyword, latest, to indicate the most recent snapshot.
@@ -213,6 +215,29 @@ pag home.snapshots --latest=10
 # Restore from that snapshot
 pag home.restore -i ~/Downloads --target=. snapshotid
 ```
+
+#### Using FUSE
+
+You can mount snapshots using FUSE, allowing you to work with their contents
+using a network-mounted filesystem. You'll first need to install
+[macfuse](https://macfuse.github.io/) (available in Homebrew,
+`brew install macfuse`). You can use `pag mount` to mount your snapshots. Refer
+to `pag mount --help` for options.
+
+☞ `pag mount` is mostly useful if you want to restore just a few files out of a
+snapshot, or to check which files are contained in a snapshot. To restore many
+files or a whole snapshot, `pag restore` is the best alternative, often it is
+*significantly* faster.
+
+#### Using third-party tools
+
+You can use any tool that works with restic, such as
+[restic-browser](https://github.com/emuell/restic-browser)
+(available in Homebrew, `brew install restic-browser`), to view and restore your
+backups.
+
+When configuring third-party tools, you may find your repository details and
+password files in `~/.pagpapanatili`.
 
 #### Further reading
 
