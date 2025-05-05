@@ -315,6 +315,8 @@ configure() {
 	section_documentation 'repository-encryption-configuration'
 
 	cd "$share_dir"
+	PAGPAPANATILI_PWD="$share_dir"
+	export PAGPAPANATILI_PWD
 
 	password_file=$(resticprofile show | awk '/ password-file:/ {print $2}')
 	test -n "$password_file" || \
